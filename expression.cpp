@@ -4,10 +4,11 @@
 #include <cmath>
 #include <complex>
 #include <vector>
-#include "expression.hpp"
 #include <algorithm>
 #include <map>
 #include <memory>
+#include "expression.hpp"
+#include "parser.hpp"
 
 namespace Expressions {
 
@@ -17,33 +18,74 @@ namespace Expressions {
 template <typename T> NumberNode<T>::NumberNode(T num) : val(num) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> NumberNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
+std::shared_ptr<ExpressionNode<T>> NumberNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const{
     return std::make_shared<NumberNode<T>>(val);
 }
 
 template <typename T>
-T NumberNode<T>::resolve() { return val; }
+T NumberNode<T>::resolve() const{ return val; }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> NumberNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> NumberNode<T>::diff(const std::string &var) const{
     return std::make_shared<NumberNode<T>>(0);
 }
 
 template <typename T> 
 std::string NumberNode<T>::to_string() const { return std::to_string(val); }
 
+// to_string for complex numbers
+template <>
+std::string NumberNode<std::complex<long double>>::to_string() const {
+    std::string res;
+    bool with_both_parts = false;
+
+    if (val.imag() == 0 && val.real() == 0) {
+        return "0";
+    } else if (val.imag() != 0 && val.real() != 0) {
+        with_both_parts = true;
+        res += '(';
+    }
+
+    if (val.real() != 0) {
+        res += std::to_string(val.real());
+    }
+
+    if (val.imag() != 0) {
+        if (val.real() != 0) {
+            if (val.imag() > 0) {
+                res += " + ";
+            } else {
+                res += " - ";
+            }
+        } else if (val.imag() < 0) {
+            res += "-";
+        }
+
+        if (std::abs(val.imag()) != 1) {
+            res += std::to_string(std::abs(val.imag()));
+        }
+        res += "i";
+    }
+
+    if (with_both_parts) {
+        res += ")";
+    }
+
+    return res;
+}
+
 
 // VARIABLE NODE
 template <typename T> VariableNode<T>::VariableNode(std::string name) : name(name) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> VariableNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> VariableNode<T>::diff(const std::string &var) const{
     if (name == var){ return std::make_shared<NumberNode<T>>(1); }
     return std::make_shared<NumberNode<T>>(0);
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> VariableNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
+std::shared_ptr<ExpressionNode<T>> VariableNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const{
     int i = 0;
     for(auto var : variables){
         if (var == name){ return std::make_shared<NumberNode<T>>(values[i]); }
@@ -54,7 +96,7 @@ std::shared_ptr<ExpressionNode<T>> VariableNode<T>::evaluate(std::vector<std::st
 }
 
 template <typename T>
-T VariableNode<T>::resolve() { return 0; }
+T VariableNode<T>::resolve() const { return 0; }
 
 template <typename T>
 std::string VariableNode<T>::to_string() const { return name; }
@@ -62,122 +104,149 @@ std::string VariableNode<T>::to_string() const { return name; }
 
 // PLUS NODE
 template <typename T>
-PlusNode<T>::PlusNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right) :
+PlusNode<T>::PlusNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right) :
 left(left), right(right) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> PlusNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> PlusNode<T>::diff(const std::string &var) const {
     return std::make_shared<PlusNode<T>>(left->diff(var), right->diff(var));
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> PlusNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
+std::shared_ptr<ExpressionNode<T>> PlusNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
     return std::make_shared<PlusNode<T>>(left->evaluate(variables, values), right->evaluate(variables, values));
 }
 
 template <typename T>
-T PlusNode<T>::resolve() { return left->resolve() + right->resolve(); }
+T PlusNode<T>::resolve() const { return left->resolve() + right->resolve(); }
 
-template <typename T> std::string PlusNode<T>::to_string() const { return left->to_string() + " + " + right->to_string(); }
+template <typename T> std::string PlusNode<T>::to_string() const {
+    return "(" + left->to_string() + " + " + right->to_string() + ")";
+}
 
 
 // MINUS NODE
 template <typename T>
-MinusNode<T>::MinusNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right) :
+MinusNode<T>::MinusNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right) :
 left(left), right(right) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> MinusNode<T>::diff(const std::string &var){
-    return std::make_shared<MinusNode<T>>(MinusNode<T>(left->diff(var), right->diff(var)));
+std::shared_ptr<ExpressionNode<T>> MinusNode<T>::diff(const std::string &var) const {
+    return std::make_shared<MinusNode<T>>(left->diff(var), right->diff(var));
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> MinusNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<MinusNode<T>>(MinusNode<T>(left->evaluate(variables, values), right->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> MinusNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<MinusNode<T>>(left->evaluate(variables, values), right->evaluate(variables, values));
 }
 
 template <typename T>
-T MinusNode<T>::resolve() { return left->resolve() - right->resolve(); }
+T MinusNode<T>::resolve() const { return left->resolve() - right->resolve(); }
 
-template <typename T> std::string MinusNode<T>::to_string() const { return left->to_string() + " - "  + right->to_string(); }
+template <typename T> std::string MinusNode<T>::to_string() const {
+    return "(" + left->to_string() + " - "  + right->to_string() + ")";
+}
 
 
 // MULTIPLICATION NODE
 template <typename T>
-MultNode<T>::MultNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right) :
+MultNode<T>::MultNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right) :
 left(left), right(right) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> MultNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> MultNode<T>::diff(const std::string &var) const {
     // f'g' = f'g + fg'
-    return std::make_shared<PlusNode<T>>(MultNode<T>(left->diff(var), right), MultNode<T>(left, right->diff(var)));
+    return std::make_shared<PlusNode<T>>(
+        std::make_shared<MultNode<T>>(left->diff(var), right),
+        std::make_shared<MultNode<T>>(left, right->diff(var)));
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> MultNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<MultNode<T>>(MultNode<T>(left->evaluate(variables, values), right->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> MultNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<MultNode<T>>(
+        left->evaluate(variables, values), 
+        right->evaluate(variables, values));
 }
 
 template <typename T>
-T MultNode<T>::resolve() { return left->resolve() * right->resolve(); }
+T MultNode<T>::resolve() const { return left->resolve() * right->resolve(); }
 
-template <typename T> std::string MultNode<T>::to_string() const { return left->to_string() + " * " + right->to_string(); }
+template <typename T> std::string MultNode<T>::to_string() const {
+    return "(" + left->to_string() + " * "  + right->to_string() + ")";
+}
 
 
 // DIVISION NODE
 template <typename T>
-DivNode<T>::DivNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right) :
+DivNode<T>::DivNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right) :
 left(left), right(right) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> DivNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> DivNode<T>::diff(const std::string &var) const {
     // (f/g)' = (f'g - fg') / g^2
-    MinusNode<T> numerator = MinusNode<T>(MultNode<T>(left->diff(var), right), MultNode<T>(left, right->diff(var)));
-    PowNode<T> denominator = PowNode<T>(right, NumberNode<T>(2));
-    return std::make_shared<DivNode<T>>(DivNode<T>(numerator, denominator));
+    auto numerator = std::make_shared<MinusNode<T>>(
+        std::make_shared<MultNode<T>>(left->diff(var), right),
+        std::make_shared<MultNode<T>>(left, right->diff(var)));
+    auto denominator = std::make_shared<PowNode<T>>(
+        right,
+        std::make_shared<NumberNode<T>>(2));
+    return std::make_shared<DivNode<T>>(numerator, denominator);
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> DivNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<DivNode<T>>(DivNode<T>(left->evaluate(variables, values), right->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> DivNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<DivNode<T>>(left->evaluate(variables, values), right->evaluate(variables, values));
 }
 
 template <typename T>
-T DivNode<T>::resolve() { return left->resolve() / right->resolve(); }
+T DivNode<T>::resolve() const { return left->resolve() / right->resolve(); }
 
-template <typename T> std::string DivNode<T>::to_string() const { return left->to_string() + " / " + right->to_string(); }
+template <typename T> std::string DivNode<T>::to_string() const {
+    return "(" + left->to_string() + " / "  + right->to_string() + ")";
+}
 
 
 // POWER NODE
 template <typename T>
-PowNode<T>::PowNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right) :
+PowNode<T>::PowNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right) :
 left(left), right(right) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> PowNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> PowNode<T>::diff(const std::string &var) const {
     // (f^g)' = (g * f^(g - 1) * f') + (f^(g) * ln(f) * g')
     //                  left_p       +      right_p  
     // f = left, g = right
 
     // f^(g - 1)
-    PowNode<T> f_pow_g = PowNode<T>(left, MinusNode<T>(right, NumberNode<T>(1)));
+    auto f_pow_g = std::make_shared<PowNode<T>>(
+                                                left,
+                                                std::make_shared<MinusNode<T>>(right,
+                                                                               std::make_shared<NumberNode<T>>(1)));
     // g * f^(g - 1) * f'
-    MultNode<T> left_p = MultNode<T>(MultNode<T>(right, left->diff(var)), f_pow_g);
+    auto left_p = std::make_shared<MultNode<T>>(
+                                                std::make_shared<MultNode<T>>(right, left->diff(var)), // g * f'
+                                                f_pow_g);
     // f^(g) * ln(f) * g'
-    MultNode<T> right_p = MultNode<T>(MultNode<T>(PowNode<T>(left, right), right->diff(var)), LnNode<T>(left));
+    auto right_p = std::make_shared<MultNode<T>>(
+                                                 std::make_shared<MultNode<T>>(
+                                                                               std::make_shared<PowNode<T>>(left, right),
+                                                                               right->diff(var)), 
+                                                 std::make_shared<LnNode<T>>(left));
 
-    return std::make_shared<PlusNode<T>>(PlusNode<T>(left_p, right_p));
+    return std::make_shared<PlusNode<T>>(left_p, right_p);
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> PowNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<PowNode<T>>(PowNode(left->evaluate(variables, values), right->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> PowNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<PowNode<T>>(left->evaluate(variables, values), right->evaluate(variables, values));
 }
 
 template <typename T>
-T PowNode<T>::resolve() { return std::pow(left->resolve(), right->resolve()); }
+T PowNode<T>::resolve() const { return std::pow(left->resolve(), right->resolve()); }
 
-template <typename T> std::string PowNode<T>::to_string() const { return left->to_string() + '^' + right->to_string(); }
+template <typename T> std::string PowNode<T>::to_string() const {
+    return "(" + left->to_string() + " ^ "  + right->to_string() + ")";
+}
 
 
 // SIN NODE
@@ -185,18 +254,20 @@ template <typename T>
 SinNode<T>::SinNode(std::shared_ptr<ExpressionNode<T>> arg) : arg(arg) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> SinNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> SinNode<T>::diff(const std::string &var) const {
     // (sin f(x))' = (cos f(x)) * f'(x)
-    return std::make_shared<MultNode<T>>(CosNode<T>(arg), arg->diff(var));
+    return std::make_shared<MultNode<T>>(
+                                         std::make_shared<CosNode<T>>(arg),
+                                         arg->diff(var));
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> SinNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<SinNode<T>>(SinNode(arg->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> SinNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<SinNode<T>>(arg->evaluate(variables, values));
 }
 
 template <typename T>
-T SinNode<T>::resolve() { return std::sin(arg->resolve()); }
+T SinNode<T>::resolve() const { return std::sin(arg->resolve()); }
 
 template <typename T> std::string SinNode<T>::to_string() const { return "sin(" + arg->to_string() + ")"; }
 
@@ -206,18 +277,22 @@ template <typename T>
 CosNode<T>::CosNode(std::shared_ptr<ExpressionNode<T>> arg) : arg(arg) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> CosNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> CosNode<T>::diff(const std::string &var) const {
     // (cos f(x))' = (-sin f(x)) * f'(x)
-    return std::make_shared<MultNode<T>>(MultNode<T>(SinNode<T>(arg), MultNode<T>(NumberNode<T>(-1), arg->diff(var))));
+    return std::make_shared<MultNode<T>>(
+                                         std::make_shared<SinNode<T>>(arg),
+                                         std::make_shared<MultNode<T>>(
+                                                                       std::make_shared<NumberNode<T>>(-1),
+                                                                       arg->diff(var)));
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> CosNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<CosNode<T>>(CosNode<T>(arg->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> CosNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<CosNode<T>>(arg->evaluate(variables, values));
 }
 
 template <typename T>
-T CosNode<T>::resolve() { return std::cos(arg->resolve()); }
+T CosNode<T>::resolve() const { return std::cos(arg->resolve()); }
 
 template <typename T> std::string CosNode<T>::to_string() const { return "cos(" + arg->to_string() + ")"; }
 
@@ -227,18 +302,18 @@ template <typename T>
 LnNode<T>::LnNode(std::shared_ptr<ExpressionNode<T>> arg) : arg(arg) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> LnNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> LnNode<T>::diff(const std::string &var) const {
     // (ln f(x))' = f'(x) / f(x)
-    return std::make_shared<DivNode<T>>(DivNode<T>(arg->diff(var), arg));
+    return std::make_shared<DivNode<T>>(arg->diff(var), arg);
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> LnNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<LnNode<T>>(LnNode<T>(arg->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> LnNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<LnNode<T>>(arg->evaluate(variables, values));
 }
 
 template <typename T>
-T LnNode<T>::resolve() { return std::log(arg->resolve()); }
+T LnNode<T>::resolve() const { return std::log(arg->resolve()); }
 
 template <typename T> std::string LnNode<T>::to_string() const { return "ln(" + arg->to_string() + ")"; }
 
@@ -248,18 +323,20 @@ template <typename T>
 ExpNode<T>::ExpNode(std::shared_ptr<ExpressionNode<T>> arg) : arg(arg) {}
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> ExpNode<T>::diff(const std::string &var){
+std::shared_ptr<ExpressionNode<T>> ExpNode<T>::diff(const std::string &var) const {
     // (exp f(x))' = (exp f(x)) * f'(x)
-    return std::make_shared<MultNode<T>>(MultNode<T>(ExpNode<T>(arg), arg->diff(var)));
+    return std::make_shared<MultNode<T>>(
+                                         std::make_shared<ExpNode<T>>(arg),
+                                         arg->diff(var));
 }
 
 template <typename T>
-std::shared_ptr<ExpressionNode<T>> ExpNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values){
-    return std::make_shared<ExpNode<T>>(ExpNode<T>(arg->evaluate(variables, values)));
+std::shared_ptr<ExpressionNode<T>> ExpNode<T>::evaluate(std::vector<std::string> variables, std::vector<T> values) const {
+    return std::make_shared<ExpNode<T>>(arg->evaluate(variables, values));
 }
 
 template <typename T>
-T ExpNode<T>::resolve() { return std::exp(arg->resolve()); }
+T ExpNode<T>::resolve() const { return std::exp(arg->resolve()); }
 
 template <typename T> std::string ExpNode<T>::to_string() const { return "exp(" + arg->to_string() + ")"; }
 
@@ -274,10 +351,11 @@ template <typename T>
 Expression<T>::Expression(T num) : expr(std::make_shared<NumberNode<T>>(num)) {}
 
 // string constructor
-//UNFIN
 template <typename T>
-Expression<T>::Expression(const std::string expression){
-    expr = std::make_shared<ExpressionNode>(Parser<T>::parseExpression(expresssion));
+Expression<T>::Expression(const std::string& expression) {
+    Lexer lexer(expression);
+    Parser<T> parser(lexer);
+    *this = parser.parseExpression();
 }
 
 // expression node constructor
@@ -308,8 +386,8 @@ Expression<T> Expression<T>::operator = (const Expression<T>&& other){
 
 // differantiates expression by given variable
 template <typename T>
-Expression<T> diff(std::string var){
-    return Expression<T>(expr->diff());
+Expression<T> Expression<T>::diff(const std::string var) const{
+    return Expression<T>(expr->diff(var));
 }
 
 // evaluates expression with given variable values
@@ -391,5 +469,8 @@ template <typename T>
 std::string Expression<T>::to_string() const{
     return expr->to_string();
 }
+
+template class Expression<long double>;
+template class Expression<std::complex<long double>>;
 
 } // namespace Expressions

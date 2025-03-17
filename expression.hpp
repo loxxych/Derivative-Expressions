@@ -7,6 +7,7 @@
 #include <cmath>
 #include <complex>
 #include <vector>
+#include <memory>
 
 namespace Expressions {
 
@@ -14,9 +15,10 @@ template <typename T>
 class ExpressionNode{
 public:
     virtual ~ExpressionNode() = default;
-    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) = 0;
-    virtual T resolve() = 0;
-    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) = 0;
+
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const = 0;
+    virtual T resolve() const = 0;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const = 0;
     virtual std::string to_string() const = 0;
 };
 
@@ -25,12 +27,12 @@ class NumberNode : public ExpressionNode<T>{
 private:
     T val;
 public:
-    NumberNode(T num);
+    explicit NumberNode(T num);
     ~NumberNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) override;
-    T resolve() override;
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) override;
-    std::string to_string() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -40,10 +42,10 @@ private:
 public:
     VariableNode(std::string name);
     ~VariableNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -52,12 +54,12 @@ private:
     std::shared_ptr<ExpressionNode<T>> left;
     std::shared_ptr<ExpressionNode<T>> right;
 public:
-    PlusNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right);
+    explicit PlusNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right);
     ~PlusNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual  T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -66,12 +68,12 @@ private:
     std::shared_ptr<ExpressionNode<T>> left;
     std::shared_ptr<ExpressionNode<T>> right;
 public:
-    MinusNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right);
+    explicit MinusNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right);
     ~MinusNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -80,12 +82,12 @@ private:
     std::shared_ptr<ExpressionNode<T>> left;
     std::shared_ptr<ExpressionNode<T>> right;
 public:
-    MultNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right);
+    explicit MultNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right);
     ~MultNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -94,12 +96,12 @@ private:
     std::shared_ptr<ExpressionNode<T>> left;
     std::shared_ptr<ExpressionNode<T>> right;
 public:
-    DivNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right);
+    explicit DivNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right);
     ~DivNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -108,12 +110,12 @@ private:
     std::shared_ptr<ExpressionNode<T>> left;
     std::shared_ptr<ExpressionNode<T>> right;
 public:
-    PowNode(std::shared_ptr<ExpressionNode<T>> left, std::shared_ptr<ExpressionNode<T>> right);
+    explicit PowNode(const std::shared_ptr<ExpressionNode<T>> &left, const std::shared_ptr<ExpressionNode<T>> &right);
     ~PowNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -121,12 +123,12 @@ class SinNode : public ExpressionNode<T>{
 private:
     std::shared_ptr<ExpressionNode<T>> arg;
 public:
-    SinNode(std::shared_ptr<ExpressionNode<T>> arg);
+    explicit SinNode(std::shared_ptr<ExpressionNode<T>> arg);
     ~SinNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -134,12 +136,12 @@ class CosNode : public ExpressionNode<T>{
 private:
     std::shared_ptr<ExpressionNode<T>> arg;
 public:
-    CosNode(std::shared_ptr<ExpressionNode<T>> arg);
+    explicit CosNode(std::shared_ptr<ExpressionNode<T>> arg);
     ~CosNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -147,12 +149,12 @@ class LnNode : public ExpressionNode<T>{
 private:
     std::shared_ptr<ExpressionNode<T>> arg;
 public:
-    LnNode(std::shared_ptr<ExpressionNode<T>> arg);
+    explicit LnNode(std::shared_ptr<ExpressionNode<T>> arg);
     ~LnNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 template <typename T>
@@ -160,12 +162,12 @@ class ExpNode : public ExpressionNode<T>{
 private:
     std::shared_ptr<ExpressionNode<T>> arg;
 public:
-    ExpNode(std::shared_ptr<ExpressionNode<T>> arg);
+    explicit ExpNode(std::shared_ptr<ExpressionNode<T>> arg);
     ~ExpNode() = default;
-    std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values);
-    T resolve();
-    std::shared_ptr<ExpressionNode<T>> diff(const std::string &var);
-    std::string to_string() const;
+    virtual std::shared_ptr<ExpressionNode<T>> evaluate(std::vector<std::string> variables, std::vector<T> values) const override;
+    virtual T resolve() const override;
+    virtual std::shared_ptr<ExpressionNode<T>> diff(const std::string &var) const override;
+    virtual std::string to_string() const override;
 };
 
 
@@ -173,15 +175,15 @@ template <typename T> class Expression{
 private:
     std::shared_ptr<ExpressionNode<T>> expr; // root of expression tree
 public:
-    Expression<T>(T num);
-    Expression<T>(const std::string expression);
-    Expression<T>(std::shared_ptr<ExpressionNode<T>> expression);
-    Expression<T>(const Expression<T>& other);
+    Expression(T num);
+    Expression(const std::string& expression);
+    Expression(std::shared_ptr<ExpressionNode<T>> expression);
+    Expression(const Expression<T>& other);
     Expression<T> operator = (const Expression<T>& other);
     Expression<T> operator = (const Expression<T>&& other);
     ~Expression() = default;
 
-    Expression<T> diff(std::string var);
+    Expression<T> diff(const std::string var) const;
     Expression<T> evaluate(std::vector<std::string> variables, std::vector<T> values);
     T resolve();
     T eval_and_resolve(std::vector<std::string> variables, std::vector<T> values);
