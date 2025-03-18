@@ -13,4 +13,4 @@ tests.exe: expression.cpp parser.cpp tests.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 clean:
-	del *.exe 2>nul || true
+	rm -f *.exe

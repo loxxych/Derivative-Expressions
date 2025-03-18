@@ -142,6 +142,14 @@ void run_tests(){
     if (expr29.to_string() == "0 + 5 * 1"){
         std::cout << "OK\n";
     } else { std::cout << "FAIL\n"; }
+
+    std::cout << "Test 19: ";
+    Expressions::Expression<long double> expr30("x ^ y");
+    Expressions::Expression<long double> expr31 = expr30.diff("y");
+    Expressions::Expression<long double> expr32 = expr30.diff("x");
+    if (expr31.to_string() == "((x ^ y) * ln(x))" && expr31.to_string() == "()"){
+        std::cout << "OK\n";
+    } else { std::cout << "FAIL\n"; }
     
 }
 
