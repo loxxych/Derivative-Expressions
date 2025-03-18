@@ -19,11 +19,11 @@ void run_tests(){
         std::cout << "OK\n";
     } else { std::cout << "FAIL\n"; }
 
-    std::cout << "Test 3: ";
-    Expressions::Expression<std::complex<double>> expr2_2("1 + i");
-    if (expr2_2.to_string() == "(x + i)"){
-        std::cout << "OK\n";
-    } else { std::cout << "FAIL\n"; }
+    // std::cout << "Test 3: ";
+    // Expressions::Expression<std::complex<double>> expr2_2("1 + i");
+    // if (expr2_2.to_string() == "(x + i)"){
+    //     std::cout << "OK\n";
+    // } else { std::cout << "FAIL\n"; }
 
 
     std::cout << "Test 4: ";

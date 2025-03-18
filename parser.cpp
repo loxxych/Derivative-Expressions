@@ -211,69 +211,71 @@ Expression<T> Parser<T>::parseExpr(){
 
     return expr;
 }
-template<typename T>
-Expression<T> Parser<T>::parseFactor()
-{
-    if (match(Left_bracket)){
-        Expression<T> expr = parseExpr();
-        expect({Right_bracket});
-        return expr;
-    }
 
-    if (match(Number))
-    {
-        std::string lexeme = previousToken_.lexeme;
-        if (lexeme == "i") {
-            // single 'i'
-            return Expression<T>(std::complex<double>(0, 1)); // 0 + 1i
-        } else if (lexeme.find('i') != std::string::npos) {
-            // complex with coef
-            lexeme.pop_back(); // deleting 'i'
-            double imagPart = std::stod(lexeme);
-            return Expression<T>(std::complex<double>(0, imagPart)); // 0 + bi
-        } else {
-            // not complex
-            return Expression<T>(std::stold(lexeme));
-        }
-    }
+// template<typename T>
+// Expression<T> Parser<T>::parseFactor()
+// {
+//     if (match(Left_bracket)){
+//         Expression<T> expr = parseExpr();
+//         expect({Right_bracket});
+//         return expr;
+//     }
 
-    if (match(Variable)){
-        return Expression<T>(previousToken_.lexeme);
-    }
+//     if (match(Number))
+//     {
+//         std::string lexeme = previousToken_.lexeme;
+//         if (lexeme == "i") {
+//             // single 'i'
+//             return Expression<T>(std::complex<double>(0, 1)); // 0 + 1i
+//         } else if (lexeme.find('i') != std::string::npos) {
+//             // complex with coef
+//             lexeme.pop_back(); // deleting 'i'
+//             double imagPart = std::stod(lexeme);
+//             return Expression<T>(std::complex<double>(0, imagPart)); // 0 + bi
+//         } else {
+//             // not complex
+//             return Expression<T>(std::stold(lexeme));
+//         }
+//     }
 
-    if (match(Sin)){
-        expect({Left_bracket});
-        Expression<T> arg = parseExpr();
-        expect({Right_bracket});
-        return arg.sin();
-    }
+//     if (match(Variable)){
+//         return Expression<T>(previousToken_.lexeme);
+//     }
 
-    if (match(Cos)){
-        expect({Left_bracket});
-        Expression<T> arg = parseExpr();
-        expect({Right_bracket});
-        return arg.cos();
-    }
+//     if (match(Sin)){
+//         expect({Left_bracket});
+//         Expression<T> arg = parseExpr();
+//         expect({Right_bracket});
+//         return arg.sin();
+//     }
 
-    if (match(Ln)){
-        expect({Left_bracket});
-        Expression<T> arg = parseExpr();
-        expect({Right_bracket});
-        return arg.ln();
-    }
+//     if (match(Cos)){
+//         expect({Left_bracket});
+//         Expression<T> arg = parseExpr();
+//         expect({Right_bracket});
+//         return arg.cos();
+//     }
 
-    if (match(Exp)){
-        expect({Left_bracket});
-        Expression<T> arg = parseExpr();
-        expect({Right_bracket});
-        return arg.exp();
-    }
+//     if (match(Ln)){
+//         expect({Left_bracket});
+//         Expression<T> arg = parseExpr();
+//         expect({Right_bracket});
+//         return arg.ln();
+//     }
+
+//     if (match(Exp)){
+//         expect({Left_bracket});
+//         Expression<T> arg = parseExpr();
+//         expect({Right_bracket});
+//         return arg.exp();
+//     }
 
 
-    throw std::runtime_error(
-        "Got unexpected token \"" + currentToken_.lexeme +
-        "\" of type " + std::to_string(currentToken_.type));
-}
+//     throw std::runtime_error(
+//         "Got unexpected token \"" + currentToken_.lexeme +
+//         "\" of type " + std::to_string(currentToken_.type));
+// }
+
 // template<>
 // Expression<std::complex<double>> Parser<std::complex<double>>::parseFactor()
 // {
@@ -338,55 +340,55 @@ Expression<T> Parser<T>::parseFactor()
 //         "\" of type " + std::to_string(currentToken_.type));
 // }
 
-// template<>
-// Expression<long double> Parser<long double>::parseFactor()
-// {
-//     if (match(Left_bracket)){
-//         Expression<long double> expr = parseExpr();
-//         expect({Right_bracket});
-//         return expr;
-//     }
+template<>
+Expression<long double> Parser<long double>::parseFactor()
+{
+    if (match(Left_bracket)){
+        Expression<long double> expr = parseExpr();
+        expect({Right_bracket});
+        return expr;
+    }
 
-//     if (match(Number)){
-//         return Expression<long double>(std::stold(previousToken_.lexeme));
-//     }
+    if (match(Number)){
+        return Expression<long double>(std::stold(previousToken_.lexeme));
+    }
 
-//     if (match(Variable)){
-//         return Expression<long double>(previousToken_.lexeme);
-//     }
+    if (match(Variable)){
+        return Expression<long double>(previousToken_.lexeme);
+    }
 
-//     if (match(Sin)){
-//         expect({Left_bracket});
-//         Expression<long double> arg = parseExpr();
-//         expect({Right_bracket});
-//         return arg.sin();
-//     }
+    if (match(Sin)){
+        expect({Left_bracket});
+        Expression<long double> arg = parseExpr();
+        expect({Right_bracket});
+        return arg.sin();
+    }
 
-//     if (match(Cos)){
-//         expect({Left_bracket});
-//         Expression<long double> arg = parseExpr();
-//         expect({Right_bracket});
-//         return arg.cos();
-//     }
+    if (match(Cos)){
+        expect({Left_bracket});
+        Expression<long double> arg = parseExpr();
+        expect({Right_bracket});
+        return arg.cos();
+    }
 
-//     if (match(Ln)){
-//         expect({Left_bracket});
-//         Expression<long double> arg = parseExpr();
-//         expect({Right_bracket});
-//         return arg.ln();
-//     }
+    if (match(Ln)){
+        expect({Left_bracket});
+        Expression<long double> arg = parseExpr();
+        expect({Right_bracket});
+        return arg.ln();
+    }
 
-//     if (match(Exp)){
-//         expect({Left_bracket});
-//         Expression<long double> arg = parseExpr();
-//         expect({Right_bracket});
-//         return arg.exp();
-//     }
+    if (match(Exp)){
+        expect({Left_bracket});
+        Expression<long double> arg = parseExpr();
+        expect({Right_bracket});
+        return arg.exp();
+    }
 
-//     throw std::runtime_error(
-//         "Got unexpected token \"" + currentToken_.lexeme +
-//         "\" of type " + std::to_string(currentToken_.type));
-// }
+    throw std::runtime_error(
+        "Got unexpected token \"" + currentToken_.lexeme +
+        "\" of type " + std::to_string(currentToken_.type));
+}
 
 template<typename T>
 Expression<T> Parser<T>::parseTerm(){
@@ -418,6 +420,6 @@ Expression<T> Parser<T>::parseExpression(){
 }
 
 template class Parser<long double>;
-template class Parser<std::complex<long double>>;
+//template class Parser<std::complex<long double>>;
 
 } // namespace Expressions
